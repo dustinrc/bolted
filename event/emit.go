@@ -10,7 +10,7 @@ import (
 
 type Emitter interface {
 	bolted.Configurer
-	Emit()
+	Emit(string)
 }
 
 type emitConnection struct {
