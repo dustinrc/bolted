@@ -35,6 +35,11 @@ func NewListenConnection(url string, cb CallbackFunc) *listenConnection {
 		bolted.Die("Cannot dial on socket for listen: %s", err.Error())
 	}
 
+	err = sock.SetOption(mangos.OptionSubscribe, []byte(""))
+	if err != nil {
+		bolted.Die("Cannot subscribe: %s", err.Error())
+	}
+
 	return &listenConnection{sock, cb}
 }
 
