@@ -11,18 +11,20 @@ import (
 type CallbackFunc func(string)
 
 type Listener interface {
-	bolted.Configurer
 	Listen()
 }
 
 type listenConnection struct {
 	sock     mangos.Socket
 	callback CallbackFunc
+	cfg      bolted.Configurer
 }
 
-func NewListenConnection(url string, cb CallbackFunc) *listenConnection {
+func NewListenConnection(cfg bolted.Configurer, cb CallbackFunc) *listenConnection {
 	var sock mangos.Socket
 	var err error
+	var url string
+	var ok bool
 
 	if sock, err = sub.NewSocket(); err != nil {
 		bolted.Die("Cannot initiate socket for listen: %s", err.Error())
@@ -30,6 +32,10 @@ func NewListenConnection(url string, cb CallbackFunc) *listenConnection {
 
 	sock.AddTransport(ipc.NewTransport())
 	sock.AddTransport(tcp.NewTransport())
+
+	if url, ok = cfg.Get("url"); !ok {
+		bolted.Die("No URL provided in the configuration")
+	}
 
 	if err = sock.Dial(url); err != nil {
 		bolted.Die("Cannot dial on socket for listen: %s", err.Error())
@@ -40,7 +46,7 @@ func NewListenConnection(url string, cb CallbackFunc) *listenConnection {
 		bolted.Die("Cannot subscribe: %s", err.Error())
 	}
 
-	return &listenConnection{sock, cb}
+	return &listenConnection{sock, cb, cfg}
 }
 
 func (lc *listenConnection) Listen() {

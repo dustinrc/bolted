@@ -9,17 +9,19 @@ import (
 )
 
 type Emitter interface {
-	bolted.Configurer
 	Emit(string)
 }
 
 type emitConnection struct {
 	sock mangos.Socket
+	cfg  bolted.Configurer
 }
 
-func NewEmitConnection(url string) *emitConnection {
+func NewEmitConnection(cfg bolted.Configurer) *emitConnection {
 	var sock mangos.Socket
 	var err error
+	var url string
+	var ok bool
 
 	if sock, err = pub.NewSocket(); err != nil {
 		bolted.Die("Cannot initiate socket for emit: %s", err.Error())
@@ -28,11 +30,15 @@ func NewEmitConnection(url string) *emitConnection {
 	sock.AddTransport(ipc.NewTransport())
 	sock.AddTransport(tcp.NewTransport())
 
+	if url, ok = cfg.Get("url"); !ok {
+		bolted.Die("No URL provided in the configuration")
+	}
+
 	if err = sock.Listen(url); err != nil {
 		bolted.Die("Cannot listen on socket for emit: %s", err.Error())
 	}
 
-	return &emitConnection{sock}
+	return &emitConnection{sock, cfg}
 }
 
 func (ec *emitConnection) Emit(msg string) {
